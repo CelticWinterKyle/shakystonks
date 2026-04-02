@@ -1,15 +1,21 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
 
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
-  '/api/cron/(.*)', // cron routes are secured via CRON_SECRET, not Clerk
+  '/api/cron/(.*)',
 ])
 
 export default clerkMiddleware(async (auth, request) => {
   if (!isPublicRoute(request)) {
-    await auth.protect()
+    const { userId } = await auth()
+    if (!userId) {
+      const signInUrl = new URL('/sign-in', request.url)
+      return NextResponse.redirect(signInUrl)
+    }
   }
+  return NextResponse.next()
 })
 
 export const config = {
