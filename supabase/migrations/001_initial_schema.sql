@@ -1,3 +1,14 @@
+-- Helper function: extract Clerk user ID from JWT
+-- Must be created before the RLS policies that reference it
+create or replace function requesting_user_id() returns text
+  language sql stable
+  as $$
+    select coalesce(
+      current_setting('request.jwt.claims', true)::json->>'sub',
+      (current_setting('request.jwt.claims', true)::json->>'userId')::text
+    )
+  $$;
+
 -- Users (synced from Clerk on first sign-in)
 create table if not exists users (
   id uuid primary key default gen_random_uuid(),
@@ -112,9 +123,6 @@ create policy "Authenticated users can read digests"
   on daily_digests for select
   using (auth.role() = 'authenticated');
 
--- Service role (used by the pipeline) can write to all tables
--- This is handled by using the service role key in cron handlers
-
 -- Users can only see/edit their own data
 create policy "Users can read their own record"
   on users for select
@@ -131,13 +139,3 @@ create policy "Users can manage their watchlist"
 create policy "Users can manage their preferences"
   on user_preferences for all
   using (user_id = (select id from users where clerk_id = requesting_user_id()));
-
--- Helper function: extract Clerk user ID from JWT
-create or replace function requesting_user_id() returns text
-  language sql stable
-  as $$
-    select coalesce(
-      current_setting('request.jwt.claims', true)::json->>'sub',
-      (current_setting('request.jwt.claims', true)::json->>'userId')::text
-    )
-  $$;
