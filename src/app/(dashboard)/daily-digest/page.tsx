@@ -33,27 +33,28 @@ export default async function DailyDigestPage() {
   return (
     <div>
       <div style={{ marginBottom: '1.75rem' }}>
-        <h1
+        <p
           style={{
-            fontFamily: 'var(--font-display)',
-            fontStyle: 'italic',
-            fontSize: '1.5rem',
-            fontWeight: 400,
-            color: 'var(--color-ink)',
-            letterSpacing: '-0.01em',
-            lineHeight: 1.2,
+            fontFamily: 'var(--font-ui)',
+            fontSize: '0.6rem',
+            fontWeight: 700,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            color: 'var(--color-red)',
             marginBottom: '6px',
           }}
         >
-          Daily Digest
-        </h1>
+          Pre-Market
+        </p>
+        <h1 className="page-title">Daily Digest</h1>
         <p
           style={{
             fontFamily: 'var(--font-data)',
-            fontSize: '0.625rem',
+            fontSize: '0.6rem',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            color: 'var(--color-ink-muted)',
+            color: 'var(--color-text-muted)',
+            marginTop: '4px',
           }}
         >
           Overnight filings · Pre-market · Ranked by signal strength

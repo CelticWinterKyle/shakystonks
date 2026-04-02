@@ -8,7 +8,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
 
   return (
-    <div style={{ background: 'var(--color-base)', minHeight: '100svh', color: 'var(--color-ink)' }}>
+    <div style={{ background: 'var(--color-base)', minHeight: '100svh', color: 'var(--color-text)' }}>
 
       {/* ── Header ── */}
       <header
@@ -16,20 +16,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           position: 'sticky',
           top: 0,
           zIndex: 40,
-          background: 'rgba(6,11,16,0.85)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid var(--color-wire)',
+          background: 'rgba(7,7,7,0.95)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid var(--color-border)',
         }}
       >
-        {/* Glow line */}
-        <div className="header-glow-line" />
+        {/* Red accent line at very top */}
+        <div style={{ height: '2px', background: 'var(--color-red)', width: '100%' }} />
 
         <div
           style={{
-            maxWidth: '64rem',
+            maxWidth: '72rem',
             margin: '0 auto',
-            padding: '0 1.25rem',
+            padding: '0 1.5rem',
             height: '52px',
             display: 'flex',
             alignItems: 'center',
@@ -38,38 +38,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           }}
         >
           {/* Left: brand + nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2.5rem' }}>
+
             {/* Wordmark */}
             <Link
               href="/live-feed"
               style={{
                 fontFamily: 'var(--font-display)',
-                fontStyle: 'italic',
-                fontSize: '1.05rem',
-                color: 'var(--color-ink)',
+                fontSize: '1.5rem',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: 'var(--color-text)',
                 textDecoration: 'none',
-                letterSpacing: '-0.01em',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                lineHeight: 1,
               }}
             >
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: 'var(--color-cyan)',
-                  boxShadow: '0 0 8px var(--color-cyan)',
-                  flexShrink: 0,
-                }}
-              />
-              shakystonks
+              Shakystonks
             </Link>
 
+            {/* Divider */}
+            <div style={{ width: '1px', height: '18px', background: 'var(--color-border)' }} />
+
             {/* Nav */}
-            <nav style={{ display: 'flex', gap: '1.5rem' }}>
+            <nav style={{ display: 'flex', gap: '2rem' }}>
               <Link
                 href="/live-feed"
                 className="nav-link"
@@ -88,27 +79,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Right: user */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: {
-                    width: 28,
-                    height: 28,
-                  },
-                },
-              }}
-            />
-          </div>
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: { width: 28, height: 28 },
+              },
+            }}
+          />
         </div>
       </header>
 
-      {/* ── Page content ── */}
+      {/* ── Content ── */}
       <main
         style={{
-          maxWidth: '64rem',
+          maxWidth: '72rem',
           margin: '0 auto',
-          padding: '2rem 1.25rem',
+          padding: '2.5rem 1.5rem',
         }}
       >
         {children}

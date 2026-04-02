@@ -8,22 +8,22 @@ interface Props {
 }
 
 const OPTIONS: { value: Confidence; label: string; description: string }[] = [
-  { value: 'low',    label: 'All',      description: 'Every classified event' },
-  { value: 'medium', label: 'Notable',  description: 'Medium + high confidence' },
-  { value: 'high',   label: 'Strong',   description: 'High confidence only' },
+  { value: 'low',    label: 'All Signals',    description: 'Every classified event' },
+  { value: 'medium', label: 'Notable',        description: 'Medium + high confidence' },
+  { value: 'high',   label: 'High Conviction', description: 'High confidence only' },
 ]
 
 export function ConfidenceFilter({ value, onChange }: Props) {
   return (
-    <div className="filter-group">
-      {OPTIONS.map((option) => (
+    <div className="filter-bar">
+      {OPTIONS.map((opt) => (
         <button
-          key={option.value}
-          onClick={() => onChange(option.value)}
-          title={option.description}
-          className={`filter-btn${value === option.value ? ' active' : ''}`}
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          title={opt.description}
+          className={`filter-tab${value === opt.value ? ' active' : ''}`}
         >
-          {option.label}
+          {opt.label}
         </button>
       ))}
     </div>

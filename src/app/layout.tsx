@@ -1,25 +1,24 @@
 import type { Metadata } from 'next'
-import { Instrument_Serif, DM_Sans, IBM_Plex_Mono } from 'next/font/google'
+import { Bebas_Neue, Barlow_Condensed, JetBrains_Mono } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
-const displayFont = Instrument_Serif({
+const displayFont = Bebas_Neue({
   weight: ['400'],
-  style: ['normal', 'italic'],
   subsets: ['latin'],
   variable: '--loaded-display',
   display: 'swap',
 })
 
-const uiFont = DM_Sans({
-  weight: ['400', '500', '600'],
+const uiFont = Barlow_Condensed({
+  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   variable: '--loaded-ui',
   display: 'swap',
 })
 
-const dataFont = IBM_Plex_Mono({
-  weight: ['400', '500', '600'],
+const dataFont = JetBrains_Mono({
+  weight: ['400', '500', '700'],
   subsets: ['latin'],
   variable: '--loaded-data',
   display: 'swap',
@@ -37,9 +36,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         lang="en"
         className={`${displayFont.variable} ${uiFont.variable} ${dataFont.variable}`}
         style={{
-          '--font-display': 'var(--loaded-display), "Instrument Serif", Georgia, serif',
-          '--font-ui':      'var(--loaded-ui), "DM Sans", system-ui, sans-serif',
-          '--font-data':    'var(--loaded-data), "IBM Plex Mono", monospace',
+          '--font-display': 'var(--loaded-display), "Bebas Neue", Impact, sans-serif',
+          '--font-ui':      'var(--loaded-ui), "Barlow Condensed", "Arial Narrow", sans-serif',
+          '--font-data':    'var(--loaded-data), "JetBrains Mono", monospace',
         } as React.CSSProperties}
       >
         <body>{children}</body>

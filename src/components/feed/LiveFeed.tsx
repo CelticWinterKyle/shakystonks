@@ -15,6 +15,7 @@ export function LiveFeed() {
   const [loading, setLoading] = useState(true)
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const fetchEvents = useCallback(async (confidenceFilter: Confidence, cursorTs?: string) => {
     const params = new URLSearchParams({ confidence: confidenceFilter })
@@ -36,6 +37,7 @@ export function LiveFeed() {
       setCursor(result.nextCursor)
       setHasMore(!!result.nextCursor)
       setLoading(false)
+      setLastUpdated(new Date())
     })
   }, [threshold, fetchEvents])
 
@@ -53,6 +55,7 @@ export function LiveFeed() {
             const newOnes = fresh.filter((e: EventWithClassification) => !existingIds.has(e.id))
             return [...newOnes, ...prev]
           })
+          setLastUpdated(new Date())
         }
       })
       .subscribe()
@@ -72,44 +75,79 @@ export function LiveFeed() {
     (e) => CONFIDENCE_RANK[e.classification.confidence] >= CONFIDENCE_RANK[threshold]
   )
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+  const highCount   = visibleEvents.filter((e) => e.classification.confidence === 'high').length
+  const medCount    = visibleEvents.filter((e) => e.classification.confidence === 'medium').length
 
-      {/* ── Feed header ── */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <div className="live-badge">
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+
+      {/* ── Stats bar ── */}
+      <div style={{ display: 'flex', marginBottom: '16px', gap: '1px' }}>
+        <div className="stat-block">
+          <div className="stat-num">{loading ? '—' : visibleEvents.length}</div>
+          <div className="stat-label">Signals</div>
+        </div>
+        <div className="stat-block">
+          <div className="stat-num" style={{ color: highCount > 0 ? 'var(--color-red)' : undefined }}>
+            {loading ? '—' : highCount}
+          </div>
+          <div className="stat-label">High Conviction</div>
+        </div>
+        <div className="stat-block">
+          <div className="stat-num" style={{ color: medCount > 0 ? 'var(--color-orange)' : undefined }}>
+            {loading ? '—' : medCount}
+          </div>
+          <div className="stat-label">Notable</div>
+        </div>
+        <div className="stat-block" style={{ flex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '10px' }}>
+          <ConfidenceFilter value={threshold} onChange={setThreshold} />
+        </div>
+      </div>
+
+      {/* ── Live indicator ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '12px',
+        }}
+      >
+        <div className="live-indicator">
           <span className="live-dot" />
           Live
         </div>
-        <ConfidenceFilter value={threshold} onChange={setThreshold} />
+        {lastUpdated && (
+          <span
+            style={{
+              fontFamily: 'var(--font-data)',
+              fontSize: '0.575rem',
+              color: 'var(--color-text-muted)',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Updated {lastUpdated.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit' })}
+          </span>
+        )}
       </div>
+
+      {/* Red rule */}
+      <hr className="red-rule" style={{ marginBottom: '12px' }} />
 
       {/* ── Loading skeleton ── */}
       {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[...Array(5)].map((_, i) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
               style={{
-                height: '92px',
-                borderRadius: '8px',
+                height: '88px',
                 background: 'var(--color-panel)',
-                border: '1px solid var(--color-wire)',
-                opacity: 1 - i * 0.15,
-                position: 'relative',
-                overflow: 'hidden',
+                border: '1px solid var(--color-border)',
+                borderLeft: '3px solid #1a1a1a',
+                opacity: Math.max(0.2, 1 - i * 0.15),
               }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.025) 50%, transparent 100%)',
-                  backgroundSize: '200% 100%',
-                  animation: 'shimmer-text 2s linear infinite',
-                }}
-              />
-            </div>
+            />
           ))}
         </div>
       )}
@@ -120,24 +158,41 @@ export function LiveFeed() {
           style={{
             padding: '4rem 2rem',
             textAlign: 'center',
-            borderRadius: '8px',
-            border: '1px solid var(--color-wire)',
+            border: '1px solid var(--color-border)',
             background: 'var(--color-panel)',
           }}
         >
-          <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--color-ink-dim)' }}>
-            No signals match the current filter.
+          <p
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.5rem',
+              letterSpacing: '0.1em',
+              color: 'var(--color-text-muted)',
+              textTransform: 'uppercase',
+            }}
+          >
+            No Signals
           </p>
-          <p style={{ marginTop: '6px', fontFamily: 'var(--font-data)', fontSize: '0.625rem', color: 'var(--color-ink-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <p
+            style={{
+              marginTop: '6px',
+              fontFamily: 'var(--font-ui)',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: 'var(--color-text-muted)',
+            }}
+          >
             Market hours 09:30 – 16:00 ET · Mon–Fri
           </p>
         </div>
       )}
 
       {/* ── Event list ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {visibleEvents.map((event, i) => (
-          <div key={event.id} style={{ animationDelay: `${i * 30}ms` }}>
+          <div key={event.id} style={{ animationDelay: `${Math.min(i * 25, 200)}ms` }}>
             <EventCard event={event} />
           </div>
         ))}
@@ -148,32 +203,35 @@ export function LiveFeed() {
         <button
           onClick={loadMore}
           style={{
+            marginTop: '12px',
             width: '100%',
-            padding: '10px',
-            borderRadius: '6px',
-            border: '1px solid var(--color-wire)',
+            padding: '12px',
+            border: '1px solid var(--color-border)',
             background: 'transparent',
-            fontFamily: 'var(--font-data)',
-            fontSize: '0.625rem',
-            fontWeight: 600,
-            letterSpacing: '0.1em',
+            fontFamily: 'var(--font-ui)',
+            fontSize: '0.65rem',
+            fontWeight: 700,
+            letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: 'var(--color-ink-muted)',
+            color: 'var(--color-text-muted)',
             cursor: 'pointer',
-            transition: 'color 0.15s ease, border-color 0.15s ease',
+            transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+            borderRadius: '2px',
           }}
           onMouseEnter={(e) => {
             const el = e.currentTarget
-            el.style.color = 'var(--color-cyan)'
-            el.style.borderColor = 'rgba(0,200,240,0.3)'
+            el.style.color = 'var(--color-red)'
+            el.style.borderColor = 'rgba(229,0,0,0.4)'
+            el.style.background = 'rgba(229,0,0,0.04)'
           }}
           onMouseLeave={(e) => {
             const el = e.currentTarget
-            el.style.color = 'var(--color-ink-muted)'
-            el.style.borderColor = 'var(--color-wire)'
+            el.style.color = 'var(--color-text-muted)'
+            el.style.borderColor = 'var(--color-border)'
+            el.style.background = 'transparent'
           }}
         >
-          Load more
+          Load More
         </button>
       )}
     </div>

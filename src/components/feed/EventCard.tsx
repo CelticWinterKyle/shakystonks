@@ -5,120 +5,102 @@ interface Props {
   event: NewsEvent & { classification: EventClassification }
 }
 
-function getCardClass(confidence: string) {
-  if (confidence === 'high')   return 'card-signal'
-  if (confidence === 'medium') return 'card-amber'
-  return 'card-default'
+function cardClass(c: string) {
+  if (c === 'high')   return 'card-high card-in'
+  if (c === 'medium') return 'card-medium card-in'
+  return 'card-low card-in'
 }
 
-function getConfidenceBadge(confidence: string) {
-  if (confidence === 'high')   return 'badge-signal'
-  if (confidence === 'medium') return 'badge-amber'
-  return 'badge-muted'
-}
-
-function getMagnitudeClass(magnitude: string) {
-  return `mag-${magnitude}`
+function badgeClass(c: string) {
+  if (c === 'high')   return 'badge-high'
+  if (c === 'medium') return 'badge-medium'
+  return 'badge-low'
 }
 
 export function EventCard({ event }: Props) {
   const { classification } = event
-  const timeAgo = formatTimeAgo(new Date(event.publishedAt))
   const tickers = event.tickers.length > 0 ? event.tickers : classification.tickersExtracted
+  const timeAgo = formatTimeAgo(new Date(event.publishedAt))
 
   return (
-    <article
-      className={`card-animate ${getCardClass(classification.confidence)}`}
-      style={{ padding: '14px 16px', transition: 'border-color 0.2s ease, background 0.2s ease' }}
-    >
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+    <article className={cardClass(classification.confidence)} style={{ padding: '14px 16px 12px' }}>
 
-        {/* ── Main content ── */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-
-          {/* Tickers */}
-          {tickers.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '8px' }}>
-              {tickers.map((ticker) => (
-                <span key={ticker} className="ticker-chip">{ticker}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Headline — Instrument Serif, the hero element */}
-          <a
-            href={event.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.9375rem',
-              fontStyle: 'italic',
-              fontWeight: 400,
-              lineHeight: 1.45,
-              color: 'var(--color-ink)',
-              textDecoration: 'none',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              transition: 'color 0.15s ease',
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-cyan)' }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-ink)' }}
-          >
-            {event.headline}
-          </a>
-
-          {/* Reasoning */}
-          {classification.reasoning && (
-            <p
-              style={{
-                marginTop: '6px',
-                fontFamily: 'var(--font-ui)',
-                fontSize: '0.75rem',
-                color: 'var(--color-ink-dim)',
-                lineHeight: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {classification.reasoning}
-            </p>
-          )}
+      {/* Top row: tickers + badges */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', flex: 1, minWidth: 0 }}>
+          {tickers.map((t) => (
+            <span key={t} className="ticker-chip">{t}</span>
+          ))}
         </div>
-
-        {/* ── Right badges ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
-          <span className={getConfidenceBadge(classification.confidence)}>
-            {classification.confidence}
-          </span>
-          <span className={getMagnitudeClass(classification.magnitude)}>
-            {classification.magnitude}
-          </span>
+        <div style={{ display: 'flex', gap: '5px', flexShrink: 0, alignItems: 'center' }}>
+          <span className={badgeClass(classification.confidence)}>{classification.confidence}</span>
+          <span className={`mag-${classification.magnitude}`}>{classification.magnitude}</span>
         </div>
       </div>
 
-      {/* ── Footer ── */}
+      {/* Headline — big, bold, Barlow Condensed */}
+      <a
+        href={event.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          fontFamily: 'var(--font-ui)',
+          fontSize: '1.0625rem',
+          fontWeight: 700,
+          lineHeight: 1.3,
+          letterSpacing: '0.01em',
+          color: 'var(--color-text)',
+          textDecoration: 'none',
+          transition: 'color 0.15s',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+        } as React.CSSProperties}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-red)' }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text)' }}
+      >
+        {event.headline}
+      </a>
+
+      {/* Reasoning */}
+      {classification.reasoning && (
+        <p
+          style={{
+            marginTop: '5px',
+            fontFamily: 'var(--font-ui)',
+            fontSize: '0.8rem',
+            fontWeight: 400,
+            color: 'var(--color-text-dim)',
+            lineHeight: 1.45,
+            display: '-webkit-box',
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          } as React.CSSProperties}
+        >
+          {classification.reasoning}
+        </p>
+      )}
+
+      {/* Footer */}
       <div
         style={{
           marginTop: '10px',
-          paddingTop: '9px',
-          borderTop: '1px solid var(--color-wire)',
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
+          borderTop: '1px solid var(--color-border)',
+          paddingTop: '8px',
         }}
       >
-        <span className="tag-chip">{EVENT_TYPE_LABELS[classification.eventType]}</span>
+        <span className="label-chip">{EVENT_TYPE_LABELS[classification.eventType]}</span>
         <span
           style={{
             fontFamily: 'var(--font-data)',
-            fontSize: '0.625rem',
-            color: 'var(--color-ink-muted)',
-            letterSpacing: '0.03em',
+            fontSize: '0.6rem',
+            color: 'var(--color-text-muted)',
+            letterSpacing: '0.04em',
           }}
         >
           {event.source}
@@ -127,9 +109,9 @@ export function EventCard({ event }: Props) {
           style={{
             marginLeft: 'auto',
             fontFamily: 'var(--font-data)',
-            fontSize: '0.625rem',
-            color: 'var(--color-ink-muted)',
-            letterSpacing: '0.03em',
+            fontSize: '0.6rem',
+            color: 'var(--color-text-muted)',
+            letterSpacing: '0.04em',
           }}
         >
           {timeAgo}

@@ -14,37 +14,30 @@ export default function SignInPage() {
       }}
     >
       {/* Wordmark above the form */}
-      <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '6px' }}>
-          <span
-            style={{
-              display: 'inline-block',
-              width: '7px',
-              height: '7px',
-              borderRadius: '50%',
-              background: 'var(--color-cyan)',
-              boxShadow: '0 0 10px var(--color-cyan)',
-            }}
-          />
-          <span
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontStyle: 'italic',
-              fontSize: '1.25rem',
-              color: 'var(--color-ink)',
-              letterSpacing: '-0.01em',
-            }}
-          >
-            shakystonks
-          </span>
-        </div>
+      <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
+        <div style={{ width: '40px', height: '3px', background: 'var(--color-red)', margin: '0 auto 12px' }} />
+        <span
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '2rem',
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--color-text)',
+            lineHeight: 1,
+            display: 'block',
+            marginBottom: '8px',
+          }}
+        >
+          Shakystonks
+        </span>
         <p
           style={{
-            fontFamily: 'var(--font-data)',
+            fontFamily: 'var(--font-ui)',
             fontSize: '0.575rem',
-            letterSpacing: '0.12em',
+            fontWeight: 600,
+            letterSpacing: '0.16em',
             textTransform: 'uppercase',
-            color: 'var(--color-ink-muted)',
+            color: 'var(--color-text-muted)',
           }}
         >
           Event-driven signal detection
