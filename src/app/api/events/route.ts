@@ -130,10 +130,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Sort by news publish date descending (DB ordering is by classified_at)
   events.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
 
+  // Deduplicate by URL — same article may be stored from multiple sources
+  const seenUrls = new Set<string>()
+  const deduped = events.filter((e) => {
+    if (seenUrls.has(e.url)) return false
+    seenUrls.add(e.url)
+    return true
+  })
+
   const nextCursor =
     rows.length === PAGE_SIZE
       ? (rows[rows.length - 1].classified_at as string)
       : null
 
-  return NextResponse.json({ events, nextCursor })
+  return NextResponse.json({ events: deduped, nextCursor })
 }

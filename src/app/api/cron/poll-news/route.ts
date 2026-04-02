@@ -41,8 +41,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ...(rssItems.status === 'fulfilled' ? rssItems.value : []),
     ]
 
+    // Deduplicate by URL — same article can arrive from multiple sources
+    const seenUrls = new Set<string>()
+    const uniqueItems = allItems.filter((item) => {
+      if (seenUrls.has(item.url)) return false
+      seenUrls.add(item.url)
+      return true
+    })
+
     // 2. Upsert all raw events (idempotent — duplicates are ignored)
-    const storedEvents = await upsertNewsEvents(allItems)
+    const storedEvents = await upsertNewsEvents(uniqueItems)
 
     // Build a map of sourceId → event UUID for linking classifications
     const eventIdMap = new Map<string, string>()
@@ -51,7 +59,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     // 3. Pre-filter: only send items with signal to Claude
-    const itemsForClassification = allItems.filter((item) => {
+    const itemsForClassification = uniqueItems.filter((item) => {
       const matches = preFilter(item.headline, item.summary)
       return matches.length > 0
     })
@@ -74,7 +82,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({
       ok: true,
-      fetched: allItems.length,
+      fetched: uniqueItems.length,
       stored: storedEvents.length,
       classified: results.length,
       material: materialEvents,

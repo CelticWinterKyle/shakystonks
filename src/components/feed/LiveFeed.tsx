@@ -341,7 +341,7 @@ export function LiveFeed() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {visibleEvents.map((event, i) => (
           <div key={event.id} style={{ animationDelay: `${Math.min(i * 25, 200)}ms` }}>
-            <EventCard event={event} />
+            <EventCard event={event} onTickerClick={setTicker} />
           </div>
         ))}
       </div>
