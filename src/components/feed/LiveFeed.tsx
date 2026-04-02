@@ -19,21 +19,17 @@ export function LiveFeed() {
   const fetchEvents = useCallback(async (confidenceFilter: Confidence, cursorTs?: string) => {
     const params = new URLSearchParams({ confidence: confidenceFilter })
     if (cursorTs) params.set('cursor', cursorTs)
-
     const res = await fetch(`/api/events?${params}`)
     if (!res.ok) return
-
     const { events: newEvents, nextCursor } = await res.json()
     return { newEvents, nextCursor }
   }, [])
 
-  // Initial load
   useEffect(() => {
     setLoading(true)
     setEvents([])
     setCursor(null)
     setHasMore(true)
-
     fetchEvents(threshold).then((result) => {
       if (!result) return
       setEvents(result.newEvents)
@@ -43,34 +39,24 @@ export function LiveFeed() {
     })
   }, [threshold, fetchEvents])
 
-  // Supabase Realtime: push new events to the top of the feed
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
-
     const channel = supabase
       .channel('event_classifications_feed')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'event_classifications' },
-        async () => {
-          // Fetch the latest page to pick up newly classified events
-          const res = await fetch(`/api/events?confidence=${threshold}`)
-          if (!res.ok) return
-          const { events: fresh } = await res.json()
-          if (fresh.length > 0) {
-            setEvents((prev) => {
-              const existingIds = new Set(prev.map((e) => e.id))
-              const newOnes = fresh.filter((e: EventWithClassification) => !existingIds.has(e.id))
-              return [...newOnes, ...prev]
-            })
-          }
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'event_classifications' }, async () => {
+        const res = await fetch(`/api/events?confidence=${threshold}`)
+        if (!res.ok) return
+        const { events: fresh } = await res.json()
+        if (fresh.length > 0) {
+          setEvents((prev) => {
+            const existingIds = new Set(prev.map((e) => e.id))
+            const newOnes = fresh.filter((e: EventWithClassification) => !existingIds.has(e.id))
+            return [...newOnes, ...prev]
+          })
         }
-      )
+      })
       .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [threshold])
 
   const loadMore = async () => {
@@ -82,49 +68,110 @@ export function LiveFeed() {
     setHasMore(!!result.nextCursor)
   }
 
-  // The server already filters by threshold; this guards against the race where
-  // threshold changes between a fetch starting and the result being applied.
   const visibleEvents = events.filter(
     (e) => CONFIDENCE_RANK[e.classification.confidence] >= CONFIDENCE_RANK[threshold]
   )
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-sm text-gray-400">Live · updates automatically</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* ── Feed header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+        <div className="live-badge">
+          <span className="live-dot" />
+          Live
         </div>
         <ConfidenceFilter value={threshold} onChange={setThreshold} />
       </div>
 
+      {/* ── Loading skeleton ── */}
       {loading && (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg bg-gray-800" />
+            <div
+              key={i}
+              style={{
+                height: '92px',
+                borderRadius: '8px',
+                background: 'var(--color-panel)',
+                border: '1px solid var(--color-wire)',
+                opacity: 1 - i * 0.15,
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.025) 50%, transparent 100%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer-text 2s linear infinite',
+                }}
+              />
+            </div>
           ))}
         </div>
       )}
 
+      {/* ── Empty state ── */}
       {!loading && visibleEvents.length === 0 && (
-        <div className="rounded-lg border border-gray-800 bg-gray-900/50 py-16 text-center">
-          <p className="text-gray-500">No events match the current filter.</p>
-          <p className="mt-1 text-sm text-gray-600">
-            Market hours are 9:30am – 4:00pm ET on weekdays.
+        <div
+          style={{
+            padding: '4rem 2rem',
+            textAlign: 'center',
+            borderRadius: '8px',
+            border: '1px solid var(--color-wire)',
+            background: 'var(--color-panel)',
+          }}
+        >
+          <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: '1rem', color: 'var(--color-ink-dim)' }}>
+            No signals match the current filter.
+          </p>
+          <p style={{ marginTop: '6px', fontFamily: 'var(--font-data)', fontSize: '0.625rem', color: 'var(--color-ink-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Market hours 09:30 – 16:00 ET · Mon–Fri
           </p>
         </div>
       )}
 
-      <div className="space-y-3">
-        {visibleEvents.map((event) => (
-          <EventCard key={event.id} event={event} />
+      {/* ── Event list ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {visibleEvents.map((event, i) => (
+          <div key={event.id} style={{ animationDelay: `${i * 30}ms` }}>
+            <EventCard event={event} />
+          </div>
         ))}
       </div>
 
+      {/* ── Load more ── */}
       {hasMore && !loading && (
         <button
           onClick={loadMore}
-          className="w-full rounded-lg border border-gray-800 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '6px',
+            border: '1px solid var(--color-wire)',
+            background: 'transparent',
+            fontFamily: 'var(--font-data)',
+            fontSize: '0.625rem',
+            fontWeight: 600,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+            color: 'var(--color-ink-muted)',
+            cursor: 'pointer',
+            transition: 'color 0.15s ease, border-color 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget
+            el.style.color = 'var(--color-cyan)'
+            el.style.borderColor = 'rgba(0,200,240,0.3)'
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget
+            el.style.color = 'var(--color-ink-muted)'
+            el.style.borderColor = 'var(--color-wire)'
+          }}
         >
           Load more
         </button>

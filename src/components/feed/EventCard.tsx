@@ -5,91 +5,135 @@ interface Props {
   event: NewsEvent & { classification: EventClassification }
 }
 
-const CONFIDENCE_STYLES = {
-  high: 'border-l-emerald-500 bg-emerald-950/20',
-  medium: 'border-l-yellow-500 bg-yellow-950/10',
-  low: 'border-l-gray-600 bg-gray-900/30',
+function getCardClass(confidence: string) {
+  if (confidence === 'high')   return 'card-signal'
+  if (confidence === 'medium') return 'card-amber'
+  return 'card-default'
 }
 
-const CONFIDENCE_BADGE = {
-  high: 'bg-emerald-900/60 text-emerald-300 ring-emerald-700/40',
-  medium: 'bg-yellow-900/60 text-yellow-300 ring-yellow-700/40',
-  low: 'bg-gray-800 text-gray-400 ring-gray-700/40',
+function getConfidenceBadge(confidence: string) {
+  if (confidence === 'high')   return 'badge-signal'
+  if (confidence === 'medium') return 'badge-amber'
+  return 'badge-muted'
 }
 
-const MAGNITUDE_BADGE = {
-  major: 'bg-red-900/50 text-red-300',
-  moderate: 'bg-orange-900/50 text-orange-300',
-  minor: 'bg-gray-800 text-gray-400',
-  unknown: 'bg-gray-800 text-gray-500',
+function getMagnitudeClass(magnitude: string) {
+  return `mag-${magnitude}`
 }
 
 export function EventCard({ event }: Props) {
   const { classification } = event
-  const borderStyle = CONFIDENCE_STYLES[classification.confidence]
-
   const timeAgo = formatTimeAgo(new Date(event.publishedAt))
+  const tickers = event.tickers.length > 0 ? event.tickers : classification.tickersExtracted
 
   return (
     <article
-      className={`rounded-lg border-l-4 border border-gray-800 p-4 transition-opacity ${borderStyle}`}
+      className={`card-animate ${getCardClass(classification.confidence)}`}
+      style={{ padding: '14px 16px', transition: 'border-color 0.2s ease, background 0.2s ease' }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Tickers — prefer source tickers, fall back to Claude-extracted ones */}
-          <div className="mb-2 flex flex-wrap gap-1.5">
-            {(event.tickers.length > 0 ? event.tickers : classification.tickersExtracted).map(
-              (ticker) => (
-                <span
-                  key={ticker}
-                  className="rounded bg-gray-800 px-2 py-0.5 font-mono text-xs font-semibold text-blue-300"
-                >
-                  {ticker}
-                </span>
-              )
-            )}
-          </div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
 
-          {/* Headline */}
+        {/* ── Main content ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* Tickers */}
+          {tickers.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', marginBottom: '8px' }}>
+              {tickers.map((ticker) => (
+                <span key={ticker} className="ticker-chip">{ticker}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Headline — Instrument Serif, the hero element */}
           <a
             href={event.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-sm font-medium text-gray-100 hover:text-blue-300 transition-colors line-clamp-2"
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.9375rem',
+              fontStyle: 'italic',
+              fontWeight: 400,
+              lineHeight: 1.45,
+              color: 'var(--color-ink)',
+              textDecoration: 'none',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-cyan)' }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-ink)' }}
           >
             {event.headline}
           </a>
 
           {/* Reasoning */}
           {classification.reasoning && (
-            <p className="mt-1.5 text-xs text-gray-500 line-clamp-2">
+            <p
+              style={{
+                marginTop: '6px',
+                fontFamily: 'var(--font-ui)',
+                fontSize: '0.75rem',
+                color: 'var(--color-ink-dim)',
+                lineHeight: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
               {classification.reasoning}
             </p>
           )}
         </div>
 
-        {/* Right column: badges */}
-        <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ${CONFIDENCE_BADGE[classification.confidence]}`}
-          >
+        {/* ── Right badges ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+          <span className={getConfidenceBadge(classification.confidence)}>
             {classification.confidence}
           </span>
-          <span
-            className={`rounded px-2 py-0.5 text-xs ${MAGNITUDE_BADGE[classification.magnitude]}`}
-          >
+          <span className={getMagnitudeClass(classification.magnitude)}>
             {classification.magnitude}
           </span>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="mt-3 flex items-center gap-3 text-xs text-gray-600">
-        <span className="rounded bg-gray-800/60 px-2 py-0.5 text-gray-400">
-          {EVENT_TYPE_LABELS[classification.eventType]}
+      {/* ── Footer ── */}
+      <div
+        style={{
+          marginTop: '10px',
+          paddingTop: '9px',
+          borderTop: '1px solid var(--color-wire)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
+      >
+        <span className="tag-chip">{EVENT_TYPE_LABELS[classification.eventType]}</span>
+        <span
+          style={{
+            fontFamily: 'var(--font-data)',
+            fontSize: '0.625rem',
+            color: 'var(--color-ink-muted)',
+            letterSpacing: '0.03em',
+          }}
+        >
+          {event.source}
         </span>
-        <span>{event.source}</span>
-        <span className="ml-auto">{timeAgo}</span>
+        <span
+          style={{
+            marginLeft: 'auto',
+            fontFamily: 'var(--font-data)',
+            fontSize: '0.625rem',
+            color: 'var(--color-ink-muted)',
+            letterSpacing: '0.03em',
+          }}
+        >
+          {timeAgo}
+        </span>
       </div>
     </article>
   )
