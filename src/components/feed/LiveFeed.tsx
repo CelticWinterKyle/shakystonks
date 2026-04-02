@@ -16,6 +16,8 @@ export function LiveFeed() {
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [running, setRunning] = useState(false)
+  const [runResult, setRunResult] = useState<{ ok: boolean; material?: number } | null>(null)
 
   const fetchEvents = useCallback(async (confidenceFilter: Confidence, cursorTs?: string) => {
     const params = new URLSearchParams({ confidence: confidenceFilter })
@@ -61,6 +63,35 @@ export function LiveFeed() {
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [threshold])
+
+  const triggerPoll = async () => {
+    setRunning(true)
+    setRunResult(null)
+    try {
+      const res = await fetch('/api/admin/trigger-poll', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.ok) {
+        setRunResult({ ok: true, material: data.material })
+        // Refresh the feed
+        const result = await fetchEvents(threshold)
+        if (result) {
+          setEvents(result.newEvents)
+          setCursor(result.nextCursor)
+          setHasMore(!!result.nextCursor)
+          setLastUpdated(new Date())
+        }
+      } else if (data.skipped) {
+        setRunResult({ ok: true, material: 0 })
+      } else {
+        setRunResult({ ok: false })
+      }
+    } catch {
+      setRunResult({ ok: false })
+    } finally {
+      setRunning(false)
+      setTimeout(() => setRunResult(null), 4000)
+    }
+  }
 
   const loadMore = async () => {
     if (!cursor || !hasMore) return
@@ -113,9 +144,31 @@ export function LiveFeed() {
           marginBottom: '12px',
         }}
       >
-        <div className="live-indicator">
-          <span className="live-dot" />
-          Live
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="live-indicator">
+            <span className="live-dot" />
+            Live
+          </div>
+          <button
+            onClick={triggerPoll}
+            disabled={running}
+            style={{
+              padding: '4px 10px',
+              border: `1px solid ${runResult ? (runResult.ok ? 'var(--color-green)' : 'var(--color-red)') : 'var(--color-border-bright)'}`,
+              background: 'transparent',
+              fontFamily: 'var(--font-ui)',
+              fontSize: '0.6rem',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: runResult ? (runResult.ok ? 'var(--color-green)' : 'var(--color-red)') : 'var(--color-text-muted)',
+              cursor: running ? 'not-allowed' : 'pointer',
+              transition: 'color 0.15s, border-color 0.15s',
+              opacity: running ? 0.6 : 1,
+            }}
+          >
+            {running ? 'Running…' : runResult ? (runResult.ok ? `+${runResult.material ?? 0} signals` : 'Error') : 'Run Now'}
+          </button>
         </div>
         {lastUpdated && (
           <span
