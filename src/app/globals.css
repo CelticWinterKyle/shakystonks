@@ -148,16 +148,26 @@ body::after {
 
 /* ── Ticker chip ── */
 .ticker-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-data);
-  font-size: 0.65rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--color-text);
   background: #161616;
   border: 1px solid #2a2a2a;
-  padding: 2px 8px;
+  padding: 5px 12px;
   border-radius: 2px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  min-height: 28px;
+}
+.ticker-chip:hover {
+  color: var(--color-red);
+  border-color: rgba(229,0,0,0.4);
+  background: rgba(229,0,0,0.06);
 }
 
 /* ── Label chip (event type) ── */

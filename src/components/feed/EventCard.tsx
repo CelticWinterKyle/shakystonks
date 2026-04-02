@@ -28,38 +28,19 @@ export function EventCard({ event, onTickerClick }: Props) {
 
       {/* Top row: tickers + badges */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', flex: 1, minWidth: 0 }}>
           {tickers.map((t) => (
-            <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-              {/* Chip: click sets the ticker filter */}
-              <button
-                onClick={() => onTickerClick?.(t)}
-                className="ticker-chip"
-                style={{ cursor: onTickerClick ? 'pointer' : 'default', border: 'none', background: 'none', padding: 0 }}
-                title={`Filter by ${t}`}
-              >
-                {t}
-              </button>
-              {/* External link to Yahoo Finance */}
-              <a
-                href={`https://finance.yahoo.com/quote/${t}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title={`${t} on Yahoo Finance`}
-                style={{
-                  fontFamily: 'var(--font-data)',
-                  fontSize: '0.5rem',
-                  color: 'var(--color-text-muted)',
-                  textDecoration: 'none',
-                  lineHeight: 1,
-                  transition: 'color 0.15s',
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-red)' }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'var(--color-text-muted)' }}
-              >
-                ↗
-              </a>
-            </span>
+            <a
+              key={t}
+              href={`https://finance.yahoo.com/quote/${t}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ticker-chip"
+              onClick={(e) => { e.stopPropagation(); onTickerClick?.(t) }}
+              title={`${t} — click to filter · opens Yahoo Finance`}
+            >
+              {t}
+            </a>
           ))}
         </div>
         <div style={{ display: 'flex', gap: '5px', flexShrink: 0, alignItems: 'center' }}>
