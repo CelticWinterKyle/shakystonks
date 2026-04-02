@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { EventCard } from './EventCard'
 import { ConfidenceFilter } from './ConfidenceFilter'
+import { EventTypeFilter } from './EventTypeFilter'
 import { CONFIDENCE_RANK } from '@/types'
 import type { NewsEvent, EventClassification, Confidence } from '@/types'
 
@@ -12,6 +13,9 @@ type EventWithClassification = NewsEvent & { classification: EventClassification
 export function LiveFeed() {
   const [events, setEvents] = useState<EventWithClassification[]>([])
   const [threshold, setThreshold] = useState<Confidence>('low')
+  const [eventTypeGroup, setEventTypeGroup] = useState('all')
+  const [ticker, setTicker] = useState('')
+  const [debouncedTicker, setDebouncedTicker] = useState('')
   const [loading, setLoading] = useState(true)
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
@@ -19,21 +23,35 @@ export function LiveFeed() {
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<{ ok: boolean; material?: number } | null>(null)
 
-  const fetchEvents = useCallback(async (confidenceFilter: Confidence, cursorTs?: string) => {
+  // Debounce ticker input
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTicker(ticker), 350)
+    return () => clearTimeout(timer)
+  }, [ticker])
+
+  const fetchEvents = useCallback(async (
+    confidenceFilter: Confidence,
+    group: string,
+    tickerFilter: string,
+    cursorTs?: string
+  ) => {
     const params = new URLSearchParams({ confidence: confidenceFilter })
     if (cursorTs) params.set('cursor', cursorTs)
+    if (group !== 'all') params.set('group', group)
+    if (tickerFilter) params.set('ticker', tickerFilter)
     const res = await fetch(`/api/events?${params}`)
     if (!res.ok) return
     const { events: newEvents, nextCursor } = await res.json()
     return { newEvents, nextCursor }
   }, [])
 
+  // Re-fetch whenever any filter changes
   useEffect(() => {
     setLoading(true)
     setEvents([])
     setCursor(null)
     setHasMore(true)
-    fetchEvents(threshold).then((result) => {
+    fetchEvents(threshold, eventTypeGroup, debouncedTicker).then((result) => {
       if (!result) return
       setEvents(result.newEvents)
       setCursor(result.nextCursor)
@@ -41,14 +59,18 @@ export function LiveFeed() {
       setLoading(false)
       setLastUpdated(new Date())
     })
-  }, [threshold, fetchEvents])
+  }, [threshold, eventTypeGroup, debouncedTicker, fetchEvents])
 
+  // Realtime subscription
   useEffect(() => {
     const supabase = getSupabaseBrowserClient()
     const channel = supabase
       .channel('event_classifications_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'event_classifications' }, async () => {
-        const res = await fetch(`/api/events?confidence=${threshold}`)
+        const params = new URLSearchParams({ confidence: threshold })
+        if (eventTypeGroup !== 'all') params.set('group', eventTypeGroup)
+        if (debouncedTicker) params.set('ticker', debouncedTicker)
+        const res = await fetch(`/api/events?${params}`)
         if (!res.ok) return
         const { events: fresh } = await res.json()
         if (fresh.length > 0) {
@@ -62,7 +84,7 @@ export function LiveFeed() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [threshold])
+  }, [threshold, eventTypeGroup, debouncedTicker])
 
   const triggerPoll = async () => {
     setRunning(true)
@@ -72,8 +94,7 @@ export function LiveFeed() {
       const data = await res.json()
       if (res.ok && data.ok) {
         setRunResult({ ok: true, material: data.material })
-        // Refresh the feed
-        const result = await fetchEvents(threshold)
+        const result = await fetchEvents(threshold, eventTypeGroup, debouncedTicker)
         if (result) {
           setEvents(result.newEvents)
           setCursor(result.nextCursor)
@@ -95,7 +116,7 @@ export function LiveFeed() {
 
   const loadMore = async () => {
     if (!cursor || !hasMore) return
-    const result = await fetchEvents(threshold, cursor)
+    const result = await fetchEvents(threshold, eventTypeGroup, debouncedTicker, cursor)
     if (!result) return
     setEvents((prev) => [...prev, ...result.newEvents])
     setCursor(result.nextCursor)
@@ -106,14 +127,14 @@ export function LiveFeed() {
     (e) => CONFIDENCE_RANK[e.classification.confidence] >= CONFIDENCE_RANK[threshold]
   )
 
-  const highCount   = visibleEvents.filter((e) => e.classification.confidence === 'high').length
-  const medCount    = visibleEvents.filter((e) => e.classification.confidence === 'medium').length
+  const highCount = visibleEvents.filter((e) => e.classification.confidence === 'high').length
+  const medCount  = visibleEvents.filter((e) => e.classification.confidence === 'medium').length
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
 
       {/* ── Stats bar ── */}
-      <div style={{ display: 'flex', marginBottom: '16px', gap: '1px' }}>
+      <div style={{ display: 'flex', marginBottom: '10px', gap: '1px' }}>
         <div className="stat-block">
           <div className="stat-num">{loading ? '—' : visibleEvents.length}</div>
           <div className="stat-label">Signals</div>
@@ -132,6 +153,80 @@ export function LiveFeed() {
         </div>
         <div className="stat-block" style={{ flex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '10px' }}>
           <ConfidenceFilter value={threshold} onChange={setThreshold} />
+        </div>
+      </div>
+
+      {/* ── Filter row: event type + ticker search ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginBottom: '14px',
+          paddingBottom: '14px',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
+        <EventTypeFilter value={eventTypeGroup} onChange={setEventTypeGroup} />
+        <div style={{ flex: 1 }} />
+        {/* Ticker search */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            border: `1px solid ${ticker ? 'var(--color-border-bright)' : 'var(--color-border)'}`,
+            padding: '5px 10px',
+            transition: 'border-color 0.15s',
+          }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--font-data)',
+              fontSize: '0.6rem',
+              fontWeight: 700,
+              color: ticker ? 'var(--color-red)' : 'var(--color-text-muted)',
+              letterSpacing: '0.04em',
+              transition: 'color 0.15s',
+            }}
+          >
+            $
+          </span>
+          <input
+            type="text"
+            value={ticker}
+            onChange={(e) => setTicker(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+            placeholder="TICKER"
+            maxLength={5}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              fontFamily: 'var(--font-data)',
+              fontSize: '0.65rem',
+              color: ticker ? 'var(--color-text)' : 'var(--color-text-muted)',
+              letterSpacing: '0.08em',
+              width: '52px',
+            }}
+          />
+          {ticker && (
+            <button
+              onClick={() => setTicker('')}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.8rem',
+                padding: '0',
+                lineHeight: 1,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              ×
+            </button>
+          )}
         </div>
       </div>
 
@@ -237,7 +332,7 @@ export function LiveFeed() {
               color: 'var(--color-text-muted)',
             }}
           >
-            Market hours 09:30 – 16:00 ET · Mon–Fri
+            {debouncedTicker ? `No events found for $${debouncedTicker}` : 'Market hours 09:30 – 16:00 ET · Mon–Fri'}
           </p>
         </div>
       )}

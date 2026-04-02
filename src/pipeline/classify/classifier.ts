@@ -37,18 +37,19 @@ const CLASSIFICATION_TOOL: Anthropic.Tool = {
   },
 }
 
-const SYSTEM_PROMPT = `You are a financial news analyst specializing in event-driven trading signals.
+const SYSTEM_PROMPT = `You are a financial news analyst specializing in event-driven trading signals for US equity markets.
 
 Classify news headlines for material corporate events that could move stock prices.
 
 Guidelines:
 - Focus on the PRIMARY event. If multiple events are present, classify the most material one.
-- 'high' confidence = event is explicitly and unambiguously stated.
-- 'medium' confidence = event is strongly implied.
-- 'low' confidence = speculative or requires inference.
-- For tickers: extract only symbols you are confident about. Do not guess.
+- 'high' confidence = official confirmation with specifics: formal press release, SEC filing, regulatory letter, or signed agreement with concrete details (dollar amounts, dates, approval status). Zero ambiguity.
+- 'medium' confidence = strongly indicated but not yet officially confirmed — e.g., multiple credible reports, named sources, or preliminary/conditional announcements.
+- 'low' confidence = speculative, unconfirmed, from unnamed sources, or requires significant inference.
+- For tickers: extract only US-listed ticker symbols you are certain about. Do not guess or infer tickers.
 - For magnitude: major = likely >5% price move; moderate = 1-5%; minor = <1%.
-- Use 'irrelevant' if no material corporate event is present.`
+- Use 'irrelevant' for: macro/economic news, general market commentary, foreign-only companies (not listed on NYSE/NASDAQ/AMEX/OTC), political news, or any item without a clear company-specific catalyst.
+- Companies listed ONLY on foreign exchanges (TSX, LSE, Euronext, Tokyo, Hong Kong, etc.) should be classified as 'irrelevant'.`
 
 export interface ClassificationInput {
   id: string

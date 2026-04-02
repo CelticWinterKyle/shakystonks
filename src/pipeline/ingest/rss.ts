@@ -55,10 +55,16 @@ async function fetchFeed(
 
 // Regex-based ticker extraction for sources that don't provide tickers natively.
 const NON_TICKER_WORDS = new Set([
+  // Roles / acronyms
   'CEO', 'CFO', 'CTO', 'COO', 'IPO', 'FDA', 'SEC', 'ETF', 'EPS',
   'GDP', 'CPI', 'FED', 'USA', 'USD', 'EUR', 'GBP', 'JPY', 'AM',
   'PM', 'Q1', 'Q2', 'Q3', 'Q4', 'AI', 'ML', 'IT', 'US', 'EU', 'UK',
   'AP', 'TV', 'PR', 'DC', 'NY', 'LA', 'SF', 'PE', 'VC', 'LTM', 'TTM',
+  // Country codes and non-US exchange identifiers
+  'NL', 'FR', 'DE', 'JP', 'CN', 'GB', 'AU', 'CA', 'CH', 'IN', 'BR',
+  'MX', 'KR', 'IT', 'ES', 'RU', 'SE', 'NO', 'DK', 'FI', 'NZ', 'HK',
+  'SG', 'TW', 'TH', 'ID', 'PH', 'MY', 'ZA', 'IL', 'TR', 'PL', 'CZ',
+  'HU', 'RO', 'GR', 'PT', 'BE', 'AT', 'IE', 'SA', 'AE', 'QA', 'NG',
 ])
 
 export function extractTickersFromText(text: string): string[] {
