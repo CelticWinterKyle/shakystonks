@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import type { NewsEvent, EventClassification } from '@/types'
 
 const PAGE_SIZE = 50
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     .from('event_classifications')
     .select(`
       id,
+      event_id,
       event_type,
       confidence,
       magnitude,
@@ -36,14 +38,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       reasoning,
       tickers_extracted,
       classified_at,
+      model_used,
       news_events (
         id,
+        source_id,
+        source,
         headline,
         summary,
         url,
         tickers,
-        source,
-        published_at
+        published_at,
+        fetched_at
       )
     `)
     .neq('event_type', 'irrelevant')
@@ -75,11 +80,39 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Query failed' }, { status: 500 })
   }
 
-  const events = data ?? []
+  const rows = data ?? []
+
+  const events: (NewsEvent & { classification: EventClassification })[] = rows.map((row) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const ne = row.news_events as any
+    return {
+      id: ne.id,
+      sourceId: ne.source_id ?? '',
+      source: ne.source,
+      headline: ne.headline,
+      summary: ne.summary ?? null,
+      url: ne.url,
+      tickers: ne.tickers ?? [],
+      publishedAt: ne.published_at,
+      fetchedAt: ne.fetched_at ?? '',
+      classification: {
+        id: row.id,
+        eventId: row.event_id,
+        eventType: row.event_type,
+        confidence: row.confidence,
+        magnitude: row.magnitude,
+        reasoning: row.reasoning ?? '',
+        tickersExtracted: row.tickers_extracted ?? [],
+        compositeScore: row.composite_score ?? 0,
+        modelUsed: row.model_used ?? '',
+        classifiedAt: row.classified_at,
+      },
+    }
+  })
 
   const nextCursor =
-    events.length === PAGE_SIZE
-      ? (events[events.length - 1].classified_at as string)
+    rows.length === PAGE_SIZE
+      ? (rows[rows.length - 1].classified_at as string)
       : null
 
   return NextResponse.json({ events, nextCursor })
