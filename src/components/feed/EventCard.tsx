@@ -1,9 +1,11 @@
 import type { EventClassification, NewsEvent } from '@/types'
 import { EVENT_TYPE_LABELS } from '@/types'
+import type { QuoteData } from '@/app/api/quotes/route'
 
 interface Props {
   event: NewsEvent & { classification: EventClassification }
   onTickerClick?: (ticker: string) => void
+  quote?: QuoteData
 }
 
 function cardClass(c: string) {
@@ -18,7 +20,7 @@ function badgeClass(c: string) {
   return 'badge-low'
 }
 
-export function EventCard({ event, onTickerClick }: Props) {
+export function EventCard({ event, onTickerClick, quote }: Props) {
   const { classification } = event
   const tickers = event.tickers.length > 0 ? event.tickers : classification.tickersExtracted
   const timeAgo = formatTimeAgo(new Date(event.publishedAt))
@@ -43,9 +45,37 @@ export function EventCard({ event, onTickerClick }: Props) {
             </a>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: '5px', flexShrink: 0, alignItems: 'center' }}>
-          <span className={badgeClass(classification.confidence)}>{classification.confidence}</span>
-          <span className={`mag-${classification.magnitude}`}>{classification.magnitude}</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', flexShrink: 0 }}>
+          {quote && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span
+                style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  color: 'var(--color-text)',
+                  letterSpacing: '0.02em',
+                }}
+              >
+                ${quote.price.toFixed(2)}
+              </span>
+              <span
+                style={{
+                  fontFamily: 'var(--font-data)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  color: quote.changePercent >= 0 ? 'var(--color-green)' : 'var(--color-red)',
+                }}
+              >
+                {quote.changePercent >= 0 ? '+' : ''}{quote.changePercent.toFixed(2)}%
+              </span>
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+            <span className={badgeClass(classification.confidence)}>{classification.confidence}</span>
+            <span className={`mag-${classification.magnitude}`}>{classification.magnitude}</span>
+          </div>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { ConfidenceFilter } from './ConfidenceFilter'
 import { EventTypeFilter } from './EventTypeFilter'
 import { CONFIDENCE_RANK } from '@/types'
 import type { NewsEvent, EventClassification, Confidence } from '@/types'
+import type { QuoteData } from '@/app/api/quotes/route'
 
 type EventWithClassification = NewsEvent & { classification: EventClassification }
 
@@ -20,6 +21,7 @@ export function LiveFeed() {
   const [cursor, setCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [quotes, setQuotes] = useState<Record<string, QuoteData>>({})
   const [running, setRunning] = useState(false)
   const [runResult, setRunResult] = useState<{ ok: boolean; material?: number } | null>(null)
 
@@ -28,6 +30,19 @@ export function LiveFeed() {
     const timer = setTimeout(() => setDebouncedTicker(ticker), 350)
     return () => clearTimeout(timer)
   }, [ticker])
+
+  // Fetch quotes whenever the visible event set changes
+  useEffect(() => {
+    if (events.length === 0) return
+    const tickers = [...new Set(
+      events.flatMap((e) => e.tickers.length > 0 ? e.tickers : e.classification.tickersExtracted)
+    )].filter(Boolean).slice(0, 20)
+    if (tickers.length === 0) return
+    fetch(`/api/quotes?tickers=${tickers.join(',')}`)
+      .then((r) => r.json())
+      .then((data) => setQuotes(data))
+      .catch(() => {})
+  }, [events])
 
   const fetchEvents = useCallback(async (
     confidenceFilter: Confidence,
@@ -339,11 +354,15 @@ export function LiveFeed() {
 
       {/* ── Event list ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {visibleEvents.map((event, i) => (
-          <div key={event.id} style={{ animationDelay: `${Math.min(i * 25, 200)}ms` }}>
-            <EventCard event={event} onTickerClick={setTicker} />
-          </div>
-        ))}
+        {visibleEvents.map((event, i) => {
+          const tickers = event.tickers.length > 0 ? event.tickers : event.classification.tickersExtracted
+          const quote = tickers.map((t) => quotes[t]).find(Boolean)
+          return (
+            <div key={event.id} style={{ animationDelay: `${Math.min(i * 25, 200)}ms` }}>
+              <EventCard event={event} onTickerClick={setTicker} quote={quote} />
+            </div>
+          )
+        })}
       </div>
 
       {/* ── Load more ── */}
