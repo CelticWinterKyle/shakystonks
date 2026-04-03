@@ -52,7 +52,7 @@ export async function insertClassifications(
   const db = createServiceClient()
 
   const rows = results
-    .filter((r) => r.eventType !== 'irrelevant')
+    .filter((r) => r.eventType !== 'irrelevant' && r.tickersMentioned.length > 0)
     .map((r) => {
       const eventId = eventIdMap.get(r.itemId)
       if (!eventId) return null

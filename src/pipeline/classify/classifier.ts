@@ -46,10 +46,10 @@ Guidelines:
 - 'high' confidence = official confirmation with specifics: formal press release, SEC filing, regulatory letter, or signed agreement with concrete details (dollar amounts, dates, approval status). Zero ambiguity.
 - 'medium' confidence = strongly indicated but not yet officially confirmed — e.g., multiple credible reports, named sources, or preliminary/conditional announcements.
 - 'low' confidence = speculative, unconfirmed, from unnamed sources, or requires significant inference.
-- For tickers: extract only US-listed ticker symbols you are certain about. Do not guess or infer tickers.
+- For tickers: extract only US-listed ticker symbols you are certain about. Do not guess, infer, or construct tickers.
+- CRITICAL: If you cannot identify at least one currently-traded US exchange ticker (NYSE, NASDAQ, AMEX, OTC) with certainty, classify the event as 'irrelevant'. No ticker = no signal. Private companies, subsidiaries, and foreign-only listed companies all produce no ticker and must be marked irrelevant.
 - For magnitude: major = likely >5% price move; moderate = 1-5%; minor = <1%.
-- Use 'irrelevant' for: macro/economic news, general market commentary, foreign-only companies (not listed on NYSE/NASDAQ/AMEX/OTC), political news, or any item without a clear company-specific catalyst.
-- Companies listed ONLY on foreign exchanges (TSX, LSE, Euronext, Tokyo, Hong Kong, etc.) should be classified as 'irrelevant'.`
+- Use 'irrelevant' for: macro/economic news, general market commentary, foreign-only companies, private companies, political news, or any item without a clear company-specific catalyst tied to a tradeable US stock.`
 
 export interface ClassificationInput {
   id: string
