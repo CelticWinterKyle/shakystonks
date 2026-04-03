@@ -130,9 +130,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Sort by news publish date descending (DB ordering is by classified_at)
   events.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
 
+  // Drop events with no extracted tickers — not actionable for stock trading
   // Deduplicate by URL — same article may be stored from multiple sources
   const seenUrls = new Set<string>()
   const deduped = events.filter((e) => {
+    if (e.classification.tickersExtracted.length === 0) return false
     if (seenUrls.has(e.url)) return false
     seenUrls.add(e.url)
     return true
